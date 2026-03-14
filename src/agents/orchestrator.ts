@@ -9,12 +9,14 @@ import { ImageDetectionAgent } from "./imageDetection";
 import { CookingAgent } from "./cooking";
 import { ShoppingAgent } from "./shopping";
 import { LocationAgent } from "./location";
+import { WasteReductionAgent } from "./wasteReduction";
 
 export class OrchestratorAgent extends BaseAgent<OrchestratorDecision> {
   private imageAgent: ImageDetectionAgent;
   private cookingAgent: CookingAgent;
   private shoppingAgent: ShoppingAgent;
   private locationAgent: LocationAgent;
+  private wasteAgent: WasteReductionAgent;
 
   constructor(onLog?: LogCallback) {
     super("orchestrator", onLog);
@@ -22,6 +24,18 @@ export class OrchestratorAgent extends BaseAgent<OrchestratorDecision> {
     this.cookingAgent = new CookingAgent(onLog);
     this.shoppingAgent = new ShoppingAgent(onLog);
     this.locationAgent = new LocationAgent(onLog);
+    this.wasteAgent = new WasteReductionAgent(onLog);
+  }
+
+  // Local intent matching — avoids Claude API call for common patterns
+  private matchLocalIntent(instruction: string, hasImage: boolean): AgentId[] | null {
+    if (hasImage) return ["image", "cooking"];
+    const msg = instruction.toLowerCase();
+    if (/cook|recipe|dinner|meal|eat|what.+make/.test(msg)) return ["cooking"];
+    if (/shop|buy|price|cost|cheap|afford/.test(msg)) return ["shopping", "location"];
+    if (/store|deliver|collect|nearby|tesco|aldi|sainsbury/.test(msg)) return ["location"];
+    if (/expir|waste|use up|going off|leftover/.test(msg)) return ["waste_reduction"];
+    return null; // ambiguous — let Claude decide
   }
 
   async execute(
@@ -30,6 +44,19 @@ export class OrchestratorAgent extends BaseAgent<OrchestratorDecision> {
     imageBase64?: string | null
   ): Promise<OrchestratorDecision | null> {
     this.log("thinking", "Analyzing your request...");
+
+    // Try local routing first to save ~50% of orchestrator API calls
+    const localAgents = this.matchLocalIntent(instruction, !!imageBase64);
+    if (localAgents) {
+      this.log("routed", `Local routing → ${localAgents.join(", ")}`);
+      return {
+        intent: instruction,
+        agents: localAgents,
+        parallel: localAgents.length > 1,
+        summary_for_user: "On it! Let me help with that.",
+        agent_instructions: {},
+      };
+    }
 
     const prompt = `User message: "${instruction || "User uploaded a photo of food ingredients"}"
 Has image attached: ${!!imageBase64}
@@ -102,6 +129,15 @@ ${context.shoppingListDescription ? `Current shopping list: ${context.shoppingLi
         this.locationAgent
           .execute(decision.agent_instructions?.location || "Find nearby stores", enrichedContext)
           .then((r) => { if (r) results.push({ type: "location", data: r }); })
+      );
+    }
+
+    if (remainingAgents.includes("waste_reduction")) {
+      agentChain.push("waste_reduction");
+      parallelTasks.push(
+        this.wasteAgent
+          .execute(decision.agent_instructions?.waste_reduction || "Identify at-risk items", enrichedContext)
+          .then((r) => { if (r) results.push({ type: "waste_reduction", data: r }); })
       );
     }
 

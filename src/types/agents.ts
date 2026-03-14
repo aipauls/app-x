@@ -1,4 +1,4 @@
-export type AgentId = "orchestrator" | "image" | "cooking" | "shopping" | "location";
+export type AgentId = "orchestrator" | "image" | "cooking" | "shopping" | "location" | "waste_reduction";
 
 export interface AgentConfig {
   id: AgentId;
@@ -87,11 +87,26 @@ export interface LocationResult {
   };
 }
 
+export interface WasteReductionItem {
+  name: string;
+  days_left: number;
+  urgency: "critical" | "warning" | "watch";
+  storage_tip: string;
+  quick_recipe_suggestion: string;
+}
+
+export interface WasteReductionResult {
+  at_risk_items: WasteReductionItem[];
+  waste_score: number;
+  weekly_tip: string;
+}
+
 export type AgentResult =
   | { type: "image_results"; data: ImageDetectionResult }
   | { type: "recipes"; data: CookingResult }
   | { type: "shopping"; data: ShoppingResult }
-  | { type: "location"; data: LocationResult };
+  | { type: "location"; data: LocationResult }
+  | { type: "waste_reduction"; data: WasteReductionResult };
 
 export interface PipelineResult {
   agentChain: AgentId[];

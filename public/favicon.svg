@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+    <linearGradient id="hat" x1="0" y1="10" x2="64" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0fdf4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+
+  <!-- Chef hat brim (rectangle base) -->
+  <rect x="14" y="38" width="36" height="7" rx="3" fill="url(#hat)"/>
+
+  <!-- Chef hat puff (rounded top) -->
+  <path d="M22 38 C22 24 16 20 20 16 C22 12 28 10 32 10 C36 10 42 12 44 16 C48 20 42 24 42 38 Z" fill="url(#hat)"/>
+
+  <!-- Dot on hat for style -->
+  <circle cx="32" cy="19" r="2.5" fill="#16a34a" opacity="0.4"/>
+</svg>
